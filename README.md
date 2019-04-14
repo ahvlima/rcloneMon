@@ -3,26 +3,38 @@ Web based remote monitor for rclone jobs
 
 # Concepts
 
-rcloneMon is based on **jobs** running at remote or local **servers** (instances of rclone with Remote Control enabled).
+rcloneMon is a simple web based remote monitor for rclone **jobs** running at remote or local **servers** (instances of rclone running with Remote Control enabled).
+It's aimed at headless setups (like NAS boxes) but can also be used to remote monitor jobs running on workstations. 
+
 Due to current limitations, only a single **job** per **server** is supported (otherwise rcloneMon will show combined statistics). 
+At this time, to properly monitor multiple **job** running on a host, use multiple **servers** on different **ports** (`--rc-addr`).
 
-At this time, to properly monitor multiple **job** running on a host, use multiple **servers** on different **ports** (--rc-addr).
+## Future development
 
-## Future
-
-Once rclone can provide per job statistics (for asynchronous jobs in a single rclone instance),
+Once (and if) rclone provides per job statistics (for asynchronous jobs in a single rclone instance),
 rcloneMon will be enhanced to allow multiple simultaneous **jobs** on a **server**.
+
+Current goals are:
+
+1. Add an acompanying job start/status script, for use in headless systems, using the same `config.json` file.
+2. Support progress information for overall job [require feature change in rclone]
+3. Support asynchronous jobs [require feature change in rclone]
+4. Create a modular component
+5. Create a multi-job monitor
+6. Add full job status over time (babysiting)
 
 # Dependencies
 
-Transfer speed graphics use [C3.js](https://c3js.org/), as well as its dependency [D3.js](https://d3js.org/).
+rcloneMon don't require a webserver, as rclone can be used to serve the files, with `--rc-files`. 
+
+There is a single dependency: transfer speed graphics use [C3.js](https://c3js.org/), as well as its dependency [D3.js](https://d3js.org/).
 
 # Installing
 
-All files, including C3.js (c3.min.js) and D3.js (d3.min.js) must be placed in a single directory. 
+All project files, including C3.js (c3.min.js) and D3.js (d3.min.js) must be placed in a single directory on a web server or under the directory structure 
+specificed on rclone `--rc-files` option. 
 
-rcloneMon does not require a webserver, as rclone can be used to serve these files, with `--rc-files`. If using a different webserver or
-monitoring jobs on a different host is possible because the current implementation of rclone does not enforce CORS.
+Using a different webserver or monitoring jobs on a different host is possible because the current implementation of rclone does not enforce CORS.
 
 
 # Configuration
@@ -50,7 +62,7 @@ The `config.json` file must be placed on the same directory as all other files. 
 servers
 * name : user defined server name, used to address the link to the server from the job array
 * addr : URL for the rclone instance
-* description: user defined server description
+* description : user defined server description
 * speedcap : max bandwidth in bytes available. If defined, will be used to prevent out-of-bounds errors in speed calculations.
 * bwidth: list of bandwidth values to use in setting the control. key is passed to rclone and value is displayed.
 * logfile: URL for retrieving the log file. Can be relative to the main HTML file. Use `--log-file` to create it.
@@ -66,9 +78,9 @@ jobs
 
 ## Authentication
 
-Basic authentication `--rc-user` and `--rc-pass` or `--rc-htpasswd` can be used without problems and the web browser will ask for the authentication only once per session.
+Basic authentication `--rc-user` + `--rc-pass` or `--rc-htpasswd` can be used without problems and the web browser will ask for the authentication only once per session.
 
-Once the web server (stand alone or rclone) is running, on a web browser open the URL to the server passing the **job** name as a paramenter:
+Once the web server (stand alone or rclone) is running, open the rcloneMon URL on a web browser, pointing to the **server** and passing the **job** name as a paramenter:
 
 `http://server.example.com:5572?job=Backup+job`
 

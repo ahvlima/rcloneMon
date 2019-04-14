@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<!-- (c) Copyright 2019 - 2AS Sistemas Ltda -->
+<!-- Version 0.9                            -->
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=Edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="rclone">
+<title>rClone Monitor</title>
+<link href="c3.min.css" rel="stylesheet">
+<link href="rcloneMon.css" rel="stylesheet">
+<script src="d3.min.js" charset="utf-8"></script>
+<script src="c3.min.js"></script>
+<script src="rcloneMon.js"></script>
+</head>
+<body>
+<div id="head">
+</div>
+<div id="error">
+</div>
+<div id="result">
+<div>
+<table id="stats">
+<tbody>    
+<tr><td>Bytes Transfered</td><td id="bytes"></td><td>Average Speed</td><td id="avgspeed"></td></tr>
+<tr><td>Files transfered</td><td id="files"></td><td>Current Speed</td><td id="speed"></td></tr>
+<tr><td>Elapsed Time</td><td id="elapsed"></td><td>Errors</td><td id="errors"></td></tr>
+</tbody>
+</table>
+<div id="fileInfo">
+<table id="fileTable">
+<tbody>
+<tr><th>File Name</th><th>Transfered</th><th>Average Speed</th><th>ETA</th></tr>
+</tbody>
+</table>
+</div>
+</div>
+<br>
+<div id="bw_chart">
+<div id='commands'>
+<div id='logfile'>
+Open current log file
+</div>
+<div id='bandwidth'>
+Bandwidth Limit:&nbsp;
+<select id='bwsel'>
+</select>
+</div>
+</div>
+<br>
+<div id="chart">
+</div>
+</div>
+</div>
+</body>
+</html>

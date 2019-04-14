@@ -1,0 +1,16 @@
+{
+    "servers": [ {
+                    "name":"My rclone server",                
+                    "addr":"http://server.example.com:5572",
+                    "description":"",
+                    "speedcap":2883584,
+                    "bwidth":{"500K":"500KBps","1M":"1MBps","1.5M":"1.5MBps","2M":"2MBps","2.5M":"2.5MBps","3M":"3MBps","off":"Unlimited"},
+                    "logfile":"rclone.log"
+    } ],
+    "jobs": [ {
+                  "name":"My backup",
+                  "server":"My rclone server",
+                  "commnand":"this is the command to be executed by the shell",
+                  "description":"Backup my server to the Cloud"
+    } ]
+}

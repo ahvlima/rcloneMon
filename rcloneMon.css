@@ -1,0 +1,147 @@
+/* Part of rcloneMon                      */
+/* (c) Copyright 2019 - 2AS Sistemas Ltda */
+/* Version 0.9                            */
+@import url(https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,400italic,600,600italic);
+
+body {
+    font: 16px 'Source Sans Pro','Helvetica Neue',Helvetica,Tahoma,sans-serif;
+}
+
+#error {
+    display: none;
+    color: maroon;
+    font-size: 15px;
+    background-color: #fec5c5;
+    margin-bottom: 10px;
+    border: 2px solid maroon;
+    border-radius: 5px;
+    padding: 12px;
+}
+
+#head {
+    font-size: 22px;
+    padding: 10px;
+    font-weight: bold;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    color: MidnightBlue;
+}
+
+
+#stats {
+    table-layout: fixed;
+    border-collapse: collapse;
+    font-size: 14px;
+    border: 1px solid MidnightBlue;
+}
+#stats tbody tr:nth-child(odd) {
+    background: #ccc;
+}
+#stats tbody tr td {
+    padding-right: 30px;
+    padding-left: 0px;
+    height: 25px;       
+    vertical-align: middle;
+    text-align: right;
+}
+#stats tbody tr td:nth-child(odd) {
+    width: 200px;
+}
+#stats tbody tr td:nth-child(even) {
+    width: 95px;
+}
+
+#fileTable {
+    table-layout: fixed;
+    border-collapse: collapse;
+    font-size: 14px;
+    border: 1px solid MidnightBlue;
+}
+#fileTable tbody tr:nth-child(4n+0),
+#fileTable tbody tr:nth-child(4n+1) {
+    background: #ccc;
+}
+#fileTable tbody tr:first-child th {
+    font-size: 13px;
+    text-align: center;
+    font-weight: bold;
+    background-color: MidnightBlue;
+    color: white;
+}
+#fileTable tbody tr td {
+    padding-left: 5px;
+    padding-right: 5px;
+    text-align: right;
+}
+#fileTable tbody tr:nth-child(2n+0) td:first-child {
+    min-width: 360px;
+    max-width: 360px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: left;
+}
+#fileTable tbody tr:nth-child(2n+0) td:nth-child(2) {
+    min-width: 140px;
+    max-width: 140px;
+}
+#fileTable tbody tr:nth-child(2n+0) td:nth-child(3) {
+    min-width: 100px;
+    max-width: 100px;
+}
+#fileTable tbody tr:nth-child(2n+0) td:nth-child(4) {
+    min-width: 60px;
+    max-width: 60px;
+}
+
+#fileTable tbody tr:nth-child(2n+1) td {
+    width: 700px}
+
+#logfile{
+    font-size: 13px;
+    color: SteelBlue;
+    cursor: pointer;
+    margin-bottom: 15px;
+}
+#bw_chart{
+    width: 710px;
+    display: flex;
+}
+#commands {
+    font-size: 13px;
+    padding: 10px;
+}
+#chart {
+   margin-left: 10px;
+}
+
+.full-bar {
+    background-color: LightSteelBlue;
+    color: MidnightBlue;
+    width: 680px;
+}
+.current-bar {
+    background-color: MidnightBlue;
+    color: LightSteelBlue;
+    left: 10px;
+}
+.progress-bar {
+    height: 20px;
+    position: absolute;
+    top: -12px;
+    left: 10px;
+    text-align: center;
+    overflow: hidden;
+    border: 1px solid MidnightBlue;
+}
+.progress-digits {
+    width: 680px;
+    height: 20px;
+    padding: 0px;
+}
+.holder {
+    position: absolute;
+}
+.progress {
+    height: 30px;
+}

@@ -3,6 +3,8 @@ Web based remote monitor for rclone jobs
 
 # Concepts
 
+![rcloneMon sample screenshot](https://raw.githubusercontent.com/ahvlima/rcloneMon/master/rclone_screen.jpg)
+
 rcloneMon is a simple web based remote monitor for rclone **jobs** running at remote or local **servers** (instances of rclone running with Remote Control enabled).
 It's aimed at headless setups (like NAS boxes) but can also be used to remote monitor jobs running on workstations. 
 

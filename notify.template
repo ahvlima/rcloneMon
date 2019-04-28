@@ -1,0 +1,18 @@
+#!/mnt/ext/opt/apache/bin/php
+<?php
+// This handles rclone notifications
+
+// Process parameters: statusFile
+$statusFile=$argv[1];
+$status=json_decode(file_get_contents($statusFile),true);
+
+switch ($status['status']) {
+case 'running':                 // Just started
+    break;
+case 'ended':                   // Finished with no errors
+    break;
+case 'failed':                  // Dang! Something's bad
+    break;
+default:
+}
+?>

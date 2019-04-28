@@ -1,6 +1,6 @@
 // Part of rcloneMon
 // (c) Copyright 2019 - 2AS Sistemas Ltda
-// Version 0.9
+// Version 0.9b
 
 // Init variables
 var lastTime=new Date();
@@ -9,12 +9,12 @@ var speedArray=[];
 var speedAvgArray=[];
 var chart;
 var job;
-var server;
+var worker;
 var fileInfo=[{}];
+var statusFile;
 
 function rcloneRC(cmd,json,callback=null) {
-                                                    // console.log(json);
-    var url=server.addr+'/'+cmd;
+    var url=worker.url+'/'+cmd;
     var init={'method':'POST',
               'headers':{'Content-Type':'application/json'},
               'body':JSON.stringify(json)};
@@ -25,16 +25,22 @@ function rcloneRC(cmd,json,callback=null) {
         return response.json();
     })
     .then(json => {if (callback) callback(json)})
-    .catch(error => setError(error));
+    .catch(error => {
+        if (window.top==window.self) {                          // Ignore message if inside iframe
+            setError(`No connection to rclone Remote Control on ${worker.url}.<br>`+
+                     'rclone may not be running or there is a network problem.<br>'+
+                     'Please verify that rclone is running and that the host is reacheable and reload.');
+        }
+    });
 }
 
 function mkFileInfo(f) {
     var info={};
     info.name=f.name;
     var size=f.size.toString().formatBytes();
-    var transfered=f.bytes.toString().formatBytes();
+    var transferred=f.bytes.toString().formatBytes();
     info.percentage=f.percentage;
-    info.ratio=transfered+'/'+size;
+    info.ratio=transferred+'/'+size;
     info.speedAvg=f.speedAvg.toString().formatBytes();
     info.eta=(f.eta) ? f.eta.toString().formatSeconds() : '';
     info.inuse=true;
@@ -44,13 +50,18 @@ function mkFileInfo(f) {
 function processStats(result) {
     // Calculate displayable results
     var now=new Date();
-    var bytesTransfered=result.bytes.toString().formatBytes(3);
+    var bytesTransferred=result.bytes.toString().formatBytes(3);
+    var filesTransferred=result.transfers;
+    if (job.status) {                           // Loaded separately 
+        if (job.status.totalbytes) bytesTransferred += ' / ' + job.status.totalbytes.toString().formatBytes(3);
+        if (job.status.totalfiles) filesTransferred+=' / '+job.status.totalfiles;
+    }
     var elapsedTime=result.elapsedTime.toString().formatSeconds();
     var speedAvg=result.speed.toString().formatBytes(3);
     var timeInterval=(now-lastTime)/1000;
     if (lastBytes) {
         var speed=(result.bytes-lastBytes)/timeInterval;
-        if (server.speedcap) speed=Math.min(server.speedcap,speed);
+        if (worker.bandwidth.speedcap) speed=Math.min(worker.bandwidth.speedcap,speed);
     } else {
         speed=0;
     }
@@ -104,39 +115,18 @@ function processStats(result) {
                     tr.insertCell(-1);                                      // Single progress column
                     tr.cells[0].colSpan='4';                                // spanning all 4 data columns
                     tr=table.rows[r+1];                                     // Progress bar row
-                    var progress=tr.cells[0];
-                    var holder=document.createElement('div');
-                    full=document.createElement('div');
-                    current=document.createElement('div');
-                    var digits1=document.createElement('div');
-                    var digits2=document.createElement('div');
-                    full.appendChild(digits1);
-                    current.appendChild(digits2);
-                    progress.appendChild(holder);
-                    holder.appendChild(full);
-                    holder.appendChild(current);
-                    progress.classList.add('progress');
-                    holder.classList.add('holder');
-                    full.classList.add('progress-bar','full-bar');
-                    current.classList.add('progress-bar','current-bar');
-                    digits1.classList.add('progress-digits');
-                    digits2.classList.add('progress-digits');
+                    addProgressBar(tr.cells[0]);                            // Add progress bar in cell
                 }
                 var tr=table.rows[r];                                       // Fetch current row
                 tr.cells[0].innerHTML=f.name;
                 tr.cells[1].innerHTML=f.ratio;
                 tr.cells[2].innerHTML=f.speedAvg+'/s';
                 tr.cells[3].innerHTML=f.eta;
-                tr.style.display='table-row';
-                tr=table.rows[++r];                                         // Progress bar row
-                var current=tr.getElementsByClassName('current-bar')[0];
-                var full=tr.getElementsByClassName('full-bar')[0];
-                var digits=tr.getElementsByClassName('progress-digits')
-                var fullSize=full.offsetWidth;
-                current.style.width=f.percentage*fullSize/100+'px';
-                digits[0].innerHTML=f.percentage+'%';
-                digits[1].innerHTML=f.percentage+'%';
-                tr.style.display='table-row';
+                tr.style.display='table-row';                               // Make visible
+                tr=table.rows[++r];                                         // Move to next row                                                                           
+                setProgressBar(tr,f.percentage);                            // Adjust progress bar
+                tr.style.display='table-row';                               // Make visible
+
             } else {
                 if (table.rows[r]) {
                     table.rows[r].style.display='none';                     // Not active? Hide it!!!
@@ -147,8 +137,8 @@ function processStats(result) {
     } 
     while (table.rows[++r]) table.rows[r].style.display='none';             // Hide leftover rows
     // Overall information
-    document.getElementById('bytes').innerHTML=bytesTransfered;
-    document.getElementById('files').innerHTML=result.transfers;
+    document.getElementById('bytes').innerHTML=bytesTransferred;
+    document.getElementById('files').innerHTML=filesTransferred;
     document.getElementById('elapsed').innerHTML=elapsedTime;
     document.getElementById('avgspeed').innerHTML=speedAvg;
     document.getElementById('speed').innerHTML=speed;
@@ -161,8 +151,54 @@ function processStats(result) {
     setTimeout(function(){rcloneRC('core/stats',null,processStats);},1000);
 }
 
+function addProgressBar(progress) {                                 // Progress is the main container (external)
+    var holder=document.createElement('div');                       // Holder is the anchor for positioning all other elements inside
+    var full=document.createElement('div');                         // Full bar  
+    var current=document.createElement('div');                      // Current bar
+    var digits1=document.createElement('div');                      // Digits in the full bar
+    var digits2=document.createElement('div');                      // Digits in the current bar
+    full.appendChild(digits1);
+    current.appendChild(digits2);
+    progress.appendChild(holder);
+    holder.appendChild(full);
+    holder.appendChild(current);
+    progress.classList.add('progress');
+    holder.classList.add('holder');
+    full.classList.add('progress-bar','full-bar');
+    current.classList.add('progress-bar','current-bar');
+    digits1.classList.add('progress-digits');
+    digits2.classList.add('progress-digits');
+}
+
+function setProgressBar(progress,percentage) {
+    var current=progress.getElementsByClassName('current-bar')[0];
+    var full=progress.getElementsByClassName('full-bar')[0];
+    var digits=progress.getElementsByClassName('progress-digits');
+    var fullSize=full.offsetWidth;
+    current.style.width=percentage*fullSize/100+'px';
+    digits[0].innerHTML=percentage+'%';
+    digits[1].innerHTML=percentage+'%'; 
+}
+
 function setBW(e) {
     rcloneRC('core/bwlimit',{"rate":e.target.value});
+}
+
+function readProgress() {
+    loadJSON(statusFile, function(status) {
+        if (status) {
+            job.status=status;
+            document.getElementById('stats').rows[0].style.display='table-row';
+            document.getElementById('started').innerHTML=status.starttime;
+            if (status.ETA) document.getElementById('eta').innerHTML=status.ETA;
+            if (status.bandwidth && document.getElementById('bandwidth').style.display=='block') {
+                document.getElementById('bwsel').value=(status.bandwidth=='unlimited') ? 'off' : status.bandwidth;
+            } 
+        } else {
+            stats.style.display='none';
+        }
+        setTimeout(function(){readProgress();},10000);                          // Next up!
+    });
 }
 
 function rcInit() {
@@ -173,13 +209,13 @@ function rcInit() {
             if (config) {
                 if (!config.jobs.some(function(job) {
                     if (job.name==jobName) {
-                        if (!config.servers.some(function(server) {
-                            if (server.name==job.server) {
-                                monitorStart(job,server);
+                        if (!config.workers.some(function(worker) {
+                            if (worker.name==job.worker) {
+                                monitorStart(job,worker);
                                 return true;
                             }
                         })) {
-                            setError(`Cannot find server "${job.server}" in configuration file`);
+                            setError(`Cannot find worker "${job.worker}" in configuration file`);
                         }
                         return true;
                     }})) {
@@ -194,20 +230,36 @@ function rcInit() {
     }
 }
 
-function monitorStart(j,s) {
+function monitorStart(j,w) {
     job=j;              // Make it global
-    server=s;           // Make it global
+    worker=w;           // Make it global
+    // Define URLs for links and data
+    baseURL=(job.baseurl) ? job.baseurl : ((worker.baseurl) ? worker.baseurl : '');
+    var logFile=(job.logfile) ? job.logfile : ((worker.logfile) ? worker.logfile : '');
+    statusFile=(job.statusfile) ? job.statusfile : ((worker.statusfile) ? worker.statusfile : '');
+    if (logFile.substring(0,1)!='/' && 
+        logFile.substring(0,7)!='http://' && 
+        logFile.substring(0,7)!='https://') logFile=baseURL+logFile;
+    if (statusFile.substring(0,1)!='/' && 
+        statusFile.substring(0,7)!='http://' && 
+        statusFile.substring(0,7)!='https://') statusFile=baseURL+statusFile;
     // Init the GUI screen
-    document.getElementById('head').innerHTML='rclone job running on '+server.addr;
-    if (server.logfile) {
-        document.getElementById('logfile').addEventListener('click',()=>{window.open(server.logfile)});
+    if (window.self===window.top) {
+        document.getElementById('head').innerHTML=`rclone job running on ${job.worker} (${worker.url})`;
+    } else {
+        document.getElementById('head').innerHTML=`Job "${job.name}" running on ${job.worker}`;
+        document.body.classList.add('alternate-background');
+    }
+    if (logFile) {
+        document.getElementById('logfile').addEventListener('click', () => { window.open(logFile) });
     } else {
         document.getElementById('logfile').style.display='none';
     }
-    if (server.bwidth) {
+    // Bandwidth control
+    if (worker.bandwidth && worker.bandwidth.settings) {
         var bwset=document.getElementById('bwsel');
-        Object.keys(server.bwidth).forEach(function(v) {
-            t=server.bwidth[v];
+        Object.keys(worker.bandwidth.settings).forEach(function(v) {
+            t=worker.bandwidth.settings[v];
             var o=document.createElement('option');
             o.value=v;
             o.text=t;
@@ -228,13 +280,17 @@ function monitorStart(j,s) {
                        data:{columns:[speedArray,speedAvgArray],
                              types:{'Speed':'area','Average Speed':'area'}},
                        point:{show:false},
+                       transition:{duration:0},
                        size:{height:240,width: 480},
                        types:{'speed':'area-spline','Average Speed':'area-spline'},
                        axis:{y:{tick:{format:function(d){return d.toString().formatBytes();}}},
                              x:{tick:{format:function(d){var t=100-d; return '-'+t.toString().formatSeconds();}}}}
                       });
     // Kick it!
-    rcloneRC('core/stats',null,processStats);
+    job.progress=null;                                              // Initialize progress information
+    document.getElementById('stats').rows[0].style.display='none';  // Hide progress row
+    if (statusFile) setTimeout(function(){readProgress();},50);     // If availabel, fetch progress information
+    rcloneRC('core/stats',null,processStats);                       // Go for the main info
 }
 
 //Bootstrap everything
@@ -255,42 +311,6 @@ function setError(msg) {
         errorDiv.style.display='block';
         document.getElementById('result').style.display='none';                     
     }
-}
-
-// Support Code
-// 
-// Augment string object
-(function() {
-    // Format seconds in h:mm:ss
-    this.formatSeconds=function () {
-        var s=parseInt(this,10);
-        var h=Math.floor(s/3600);
-        var m=Math.floor((s-(h*3600))/60);
-        s=s-(h*3600)-(m*60);
-        if (m<10) m="0"+m;
-        if (s<10) s="0"+s;
-        return (h+':'+m+':'+s).replace(/^[0:]+/,'');
-    }
-    // Format as bytes with optional decimals
-    this.formatBytes=function(decimals=2) {
-        if (this==0) return '0 Bytes';
-        var k=1024;
-        var dm=decimals < 0 ? 0 : decimals;
-        var sizes=['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-        var i=Math.floor(Math.log(this) / Math.log(k));
-        return parseFloat((this / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
-    }
-}).call(String.prototype);
-
-// Load and return a JSON from URL
-function loadJSON(url,callback) {
-    fetch(url)     
-    .then(response => {
-        if (!response.ok) throw Error(response.statusText);
-        return response.json();
-    })
-    .then(json => callback(json))
-    .catch(error => callback());
 }
 
 // Extract QueryString parameter by name from URL (defaults to current)

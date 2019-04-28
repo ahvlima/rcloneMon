@@ -1,0 +1,70 @@
+#!/mnt/ext/opt/apache/bin/php
+<?php
+// This monitors rclone job output (in STDIN) for progress statistics
+
+$version="0.9b";
+
+// Signal handler (Needed to properly terminate the spawnned process)
+declare(ticks=1);
+function sigHandler($signo,$siginfo=null) {
+    global $proc,$tail;
+    switch ($signo) {
+    case SIGTERM:
+        $c=proc_get_status($proc);
+        posix_kill($c['pid'],SIGKILL);
+        fclose($tail);
+        proc_close($proc);
+        exit;
+        break;
+    default:
+    }
+}
+
+// Process parameters: statusFile
+$logFile=$argv[1];
+$statusFile=$argv[2];
+$status=json_decode(file_get_contents($statusFile),true);
+if ($status['status']!='running') exit;
+
+// Start file monitor and get handle to its output
+$proc=proc_open("tail -f $logFile 2> /dev/null",[1=>['pipe','w']],$pipes);
+$tail=$pipes[1];
+pcntl_signal(SIGTERM,'sigHandler');
+
+// The Loop
+while ($line=fgets($tail)) {
+    pcntl_signal_dispatch();
+    $info=explode(' ',preg_replace('/\s+/',' ',$line));
+    if ($info[0]=='Transferred:') {
+        if (count($info)>6) {
+            $status['transferredbytes']=convert2Bytes($info[1]);
+            $status['totalbytes']=convert2Bytes($info[3],$info[4]);
+            $status['ETA']=$info[9];
+        } else {
+            if (isset($status['ETA'])) {                                    // Only at full entry!
+                $status['transferredfiles']=$info[1];
+                $status['totalfiles']=substr($info[3],0,-1);                // Remove trailling ','
+                file_put_contents($statusFile,json_encode($status,JSON_PRETTY_PRINT));
+            }
+        }
+    } elseif ($info[0]=='Errors:') {
+        $status['errors']=trim($info[1]);
+    } elseif ($info[2]=='NOTICE:' && $info[3]=='Bandwidth') {
+        $status['bandwidth']=trim($info[7]);
+        file_put_contents($statusFile,json_encode($status,JSON_PRETTY_PRINT));
+    }
+}
+exit;
+
+// Process byte count
+function convert2Bytes($value,$unit=null) {
+    if ($unit) {
+        $multiplier=array_search(strtoupper(substr($unit,0,1)),[0=>'B',1=>'K',2=>'M',3=>'G',4=>'T']);
+        $value=$value*(1024**$multiplier);
+    } else {
+        $multiplier=array_search(strtoupper(substr($value,-1)),[1=>'K',2=>'M',3=>'G',4=>'T']);
+        if ($multiplier) $value=substr($value,0,-1)*(1024**$multiplier);
+    }
+    return round($value);
+}
+?>

@@ -1,10 +1,14 @@
 /* Part of rcloneMon                      */
 /* (c) Copyright 2019 - 2AS Sistemas Ltda */
-/* Version 0.9                            */
+/* Version 0.9a                           */
 @import url(https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,400italic,600,600italic);
 
 body {
     font: 16px 'Source Sans Pro','Helvetica Neue',Helvetica,Tahoma,sans-serif;
+    background-color: #fff;
+    margin: 0;
+    padding: 0;
+    border: 0;
 }
 
 #error {
@@ -19,23 +23,35 @@ body {
 }
 
 #head {
-    font-size: 22px;
-    padding: 10px;
+    font-size: 24px;
+    padding-top: 5px;
+    padding-left: 10px;
     font-weight: bold;
-    margin-top: 10px;
-    margin-bottom: 10px;
+    margin-top: 0px;
+    margin-bottom: 5px;
     color: MidnightBlue;
 }
 
+#result {
+    padding:10px;
+}
 
 #stats {
     table-layout: fixed;
     border-collapse: collapse;
     font-size: 14px;
     border: 1px solid MidnightBlue;
+    border-bottom: 1px solid SteelBlue;
 }
 #stats tbody tr:nth-child(odd) {
+    background: #eee;
+}
+#stats tbody tr:nth-child(even) {
     background: #ccc;
+}
+#stats tbody tr:nth-child(1) td:nth-child(2){
+    font-size: 11px;
+    color: MidnightBlue;
 }
 #stats tbody tr td {
     padding-right: 30px;
@@ -45,10 +61,10 @@ body {
     text-align: right;
 }
 #stats tbody tr td:nth-child(odd) {
-    width: 200px;
+    width: 120px;
 }
 #stats tbody tr td:nth-child(even) {
-    width: 95px;
+    width: 175px;
 }
 
 #fileTable {
@@ -56,16 +72,21 @@ body {
     border-collapse: collapse;
     font-size: 14px;
     border: 1px solid MidnightBlue;
+    border-top: 1px solid SteelBlue;
 }
 #fileTable tbody tr:nth-child(4n+0),
 #fileTable tbody tr:nth-child(4n+1) {
     background: #ccc;
 }
+#fileTable tbody tr:nth-child(4n+2),
+#fileTable tbody tr:nth-child(4n+3) {
+    background: #eee;
+}
 #fileTable tbody tr:first-child th {
     font-size: 13px;
     text-align: center;
     font-weight: bold;
-    background-color: MidnightBlue;
+    background-color: SteelBlue;
     color: white;
 }
 #fileTable tbody tr td {
@@ -123,7 +144,6 @@ body {
 .current-bar {
     background-color: MidnightBlue;
     color: LightSteelBlue;
-    left: 10px;
 }
 .progress-bar {
     height: 20px;
@@ -144,4 +164,7 @@ body {
 }
 .progress {
     height: 30px;
+}
+.alternate-background {
+    background-color: #d3d8de;
 }

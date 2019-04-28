@@ -1,0 +1,5 @@
+# Enable cross domain access control
+Header always set Access-Control-Allow-Origin *
+Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+Header always set Access-Control-Allow-Headers "x-test-header, Origin, X-Requested-With, Content-Type, Accept, pragma, cache-control"
+

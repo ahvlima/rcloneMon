@@ -1,16 +1,76 @@
 {
-    "servers": [ {
-                    "name":"My rclone server",                
-                    "addr":"http://server.example.com:5572",
-                    "description":"",
-                    "speedcap":2883584,
-                    "bwidth":{"500K":"500KBps","1M":"1MBps","1.5M":"1.5MBps","2M":"2MBps","2.5M":"2.5MBps","3M":"3MBps","off":"Unlimited"},
-                    "logfile":"rclone.log"
-    } ],
+    "workers": [ {
+                  "name":"worker1",                
+                  "description":"Description of worker #1",
+                  "url":"http://server1.example.com:5572",
+                  "baseurl":"http://server1.example.com/rclone/",
+                  "bandwidth":{"speedcap":2883584,"settings":{"off":"unlimited","500k":"500KBps","1M":"1MBps","1.500M":"1.5MBps","2M":"2MBps","2.500M":"2.5MBps","3M":"3MBps"}},
+                  "notify":"/usr/share/rclone/notify"
+                 },
+                 {
+                  "name":"worker2",                
+                  "description":"Description of worker #2",
+                  "url":"http://server2.example.com:5572",
+                  "baseurl":"http://server2.example.com/rclone/",
+                  "bandwidth":{"speedcap":2883584,"settings":{"off":"unlimited","500k":"500KBps","1M":"1MBps","1.500M":"1.5MBps","2M":"2MBps","2.500M":"2.5MBps","3M":"3MBps"}},
+                  "notify":"/usr/share/rclone/notify"
+                 } ],
     "jobs": [ {
-                  "name":"My backup",
-                  "server":"My rclone server",
-                  "commnand":"this is the command to be executed by the shell",
-                  "description":"Backup my server to the Cloud"
-    } ]
+               "name":"Backup1",
+               "description":"Backup Job #1",
+               "worker":"worker1",
+               "command":"/usr/bin/rclone --rc --rc-addr=0.0.0.0:5572 -v --log-file=/usr/share/rclone/backup1/rclone.log --tpslimit=3 --checkers=3 --drive-chunk-size=32M --rc-files=/usr/share/rclone --rc-user=xxxx --rc-pass=xxxx sync /file/tobackup1 remote:backup1",
+               "basedir":"/usr/share/rclone",
+               "logfile":"backup1/rclone.log",
+               "statusfile":"backup1/rclone.status"
+              },
+              {
+               "name":"Backup2",
+               "description":"Backup Job #2",
+               "worker":"worker2",
+               "command":"/usr/bin/rclone --rc --rc-addr=0.0.0.0:5572 -v --log-file=/usr/share/rclone/backup2/rclone.log --tpslimit=3 --checkers=3 --drive-chunk-size=32M --rc-files=/usr/share/rclone --rc-user=xxxx --rc-pass=xxxx sync /file/tobackup2 remote:backup2",
+               "basedir":"/usr/share/rclone",
+               "logfile":"backup2/rclone.log",
+               "statusfile":"backup2/rclone.status"
+              },
+              {
+               "name":"quick1",
+               "description":"Quick rclone test for worker #1",    
+               "worker":"worker1",
+               "command":"/usr/bin/rclone -v --log-file=/usr/share/rclone/test/quick.log lsf remote:",
+               "basedir":"/usr/share/rclone",
+               "logfile":"test/quick.log",
+               "statusfile":"test/quick.status"
+              },
+              {
+               "name":"long1",
+               "description":"Long rclone test for worker #1",    
+               "worker":"worker1",
+               "command":"/usr/bin/rclone --rc --rc-addr=0.0.0.0:5572 -v --log-file=/usr/share/rclone/test/long.log --tpslimit=3 --checkers=3 --drive-chunk-size=32M --rc-files=/usr/share/rclone --rc-user=xxxx --rc-pass=xxxx sync /file/junkpile remote:garbage1",
+               "basedir":"/usr/share/rclone",
+               "logfile":"test/long.log",
+               "statusfile":"test/long.status"
+              },              
+              {
+               "name":"quick2",
+               "description":"Quick rclone test for worker #2",    
+               "worker":"worker2",
+               "command":"/usr/bin/rclone -v --log-file=/usr/share/rclone/test/quick.log lsf remote:",
+               "basedir":"/usr/share/rclone",
+               "logfile":"test/quick.log",
+               "statusfile":"test/quick.status"
+              },
+              {
+               "name":"long2",
+               "description":"Long rclone test for worker #2",    
+               "worker":"worker2",
+               "command":"/usr/bin/rclone --rc --rc-addr=0.0.0.0:5572 -v --log-file=/usr/share/rclone/test/long.log --tpslimit=3 --checkers=3 --drive-chunk-size=32M --rc-files=/usr/share/rclone --rc-user=xxxx --rc-pass=xxxx sync /file/junkpile remote:garbage2",
+               "basedir":"/usr/share/rclone",
+               "logfile":"test/long.log",
+               "statusfile":"test/long.status"
+              } ],
+    "environment": {
+                    "timezone":"America/New_York",
+                    "systemp":"/var/run"
+                   } 
 }

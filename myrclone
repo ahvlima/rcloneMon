@@ -1,0 +1,150 @@
+#!/mnt/ext/opt/apache/bin/php -c/etc/config/php2.ini
+<?php
+// This wraps rclone jobs
+
+$version="0.9b";
+
+// Process parameters: jobName [basedir]
+$baseDir=__DIR__.'/';                       // Same place as we are!
+switch ($argc) {
+case 3:
+    $baseDir=$argv[2];                      // parameter override
+    if (!is_dir($baseDir)) die("Work directory '$baseDir' not found.\n");
+case 2:
+    $baseDir=rtrim($baseDir,'/').'/';       // Single '/' at the end
+    $configFile=$baseDir.'config.json';     // Use default or command line value
+    if (!is_file($configFile)) die ("Config file '$configFile' not found.\n");
+    $config=json_decode(file_get_contents($configFile),true);
+    if ($config===null) die ("Invalid config file '$configFile'.\n");
+    $jobName=$argv[1];
+    $found=false;
+    foreach ($config[jobs] as $job) {
+        if ($job['name']==$jobName) {      
+            $found=true;
+            break;
+        }
+    }
+    if (!$found) die("Job '$jobName' not found in '".$baseDir."config.json' file.\n");
+    break;
+default:
+    die ("Parameters missing or invalid.\n");
+}
+
+// Find worker
+$workerName=$job['worker'];
+$found=false;
+foreach ($config[workers] as $worker) {
+    if ($worker['name']==$workerName) {      
+        $found=true;
+        break;
+    }
+}
+if (!$found) die("Worker '$workerName' not found in '".$baseDir."config.json' file.\n");
+
+// Timezone is a bitch in PHP, if not set in php.ini that "may be" loaded
+$defaultTZ=ini_get('date.timezone');
+if (!$defaultTZ) $defaultTZ='UTC'; 
+$tz=(isset($config['environment']['timezone'])) ? $config['environment']['timezone'] : $defaultTZ;
+date_default_timezone_set($tz);                 // There will be no errors and allow many ways to handle it!
+$start=time();
+$startTime=date(DATE_COOKIE,$start);
+// Initialize work environment
+$sysTemp=(isset($config['environment']['systemp'])) ? $config['environment']['systemp'] : '/var/run';
+$sysTemp=rtrim($sysTemp,'/').'/';
+$me=basename($argv[0]);
+$pid=getmypid();
+$id=$me.'-'.preg_replace('/\s+/','_',trim($jobName));
+$pidFile=$sysTemp.$id;
+$baseDir=(isset($job['basedir'])) ? $job['basedir'] : ((isset($worker['basedir'])) ? $worker['basedir'] : $baseDir);
+$baseDir=rtrim($baseDir,'/').'/';
+$logFile=(isset($job['logfile'])) ? $job['logfile'] : ((isset($worker['logfile'])) ? $worker['logfile'] : '');
+if (substr($logFile,0,1)!='/') $logFile=$baseDir.$logFile;
+$statusFile=(isset($job['statusfile'])) ? $job['statusfile'] : ((isset($worker['statusfile'])) ? $worker['statusfile'] : '');
+if (substr($statusFile,0,1)!='/') $statusFile=$baseDir.$statusFile;
+$notify=(isset($job['notify'])) ? $job['notify'] : ((isset($worker['notify'])) ? $worker['notify'] : '');
+
+// initialize status(File)
+$status=[];
+$status['job']=$jobName;
+$status['worker']=$workerName;
+$status['start']=$start;
+$status['starttime']=$startTime;
+$status['status']='running';
+if (isset($worker['bandwidth']) && isset($worker['bandwidth']['settings'])) $status['bandwidth']=reset($worker['bandwidth']['settings']);
+file_put_contents($statusFile, json_encode($status, JSON_PRETTY_PRINT));
+if ($notify) exec("$notify \"$statusFile\"");       // Startup notification
+ 
+// Check for another version of this program running
+if (is_file($pidFile)) {                            // Found a PID lock file
+    $oldPID=file_get_contents($pidFile);
+    if (is_file("/proc/$oldPID")) die("Another instance of '$me' (PID $oldPID) is running for job '$jobName'.\n");
+    if (!@unlink($pidFile)) die("Cannot remove existing PID lock file '$oldPID'.\n");
+}
+file_put_contents($pidFile,$pid);                   // Create a new PID lock file. We are in business here, lets proceed!
+
+// Start progress monitor
+$proc=proc_open(__DIR__."/proclog $logFile $statusFile",[0=>['pipe','r']],$pipes); 
+
+// Let's get this rolling
+logOutput(str_repeat("=",72)."\n");                 // God old 72 cols (+8=80)
+logOutput("$me $version starting on $startTime\n");
+exec($job['command'],$output,$rc);
+
+// Signal progress monitor to stop (will actually close on next log write)
+$c=proc_get_status($proc);
+posix_kill($c['pid'], SIGKILL);
+proc_close($proc);
+
+// Termination processing
+$end=time();
+$endTime=date(DATE_COOKIE,$end);
+$elapsed=$end-$start;
+if ($rc!=0) {
+    logOutput("Execution error. RC=$rc\n");
+    // echo("Execution error. RC=$rc\n");
+    $finalStatus='failed';
+    if (count($output)>0) $status['output']=$output;
+} else {
+    $finalStatus='ended';
+}
+if (count($output)>0) {
+    foreach($output as $line) {
+        logOutput($line."\n");
+        // echo($line."\n");
+    }
+}
+logOutput("$me $version ended on $endTime\n");
+@unlink($pidFile);
+sleep(5);                                                           // Give time for the log to be processed
+$status=json_decode(file_get_contents($statusFile),true);           // Retrieve last progress information
+$status['end']=$end;
+$status['endtime']=$endTime;
+$status['elapsed']=formatSeconds($elapsed);
+$status['lastrc']=$rc;
+$status['status']=$finalStatus;
+file_put_contents($statusFile,json_encode($status,JSON_PRETTY_PRINT));
+
+// Send good/bad notification
+if ($notify) exec("$notify \"$statusFile\"");
+
+// We are done here!
+exit($rc);
+
+// Support code
+function logOutput($msg) {
+    global $logFile;
+    if ($logFile!==null) file_put_contents($logFile,$msg,FILE_APPEND);
+}
+
+function formatSeconds($s,$unit=true) {
+    $h=floor($s/3600);
+    $m=floor(($s-($h*3600))/60);
+    $s=$s-($h*3600)-($m*60);
+    if ($m<10) $m='0'.$m;
+    if ($s<10) $s='0'.$s;
+    if ($unit) {
+        return preg_replace('/^[0:hm]+/','',$h.'h'.$m.'m'.$s.'s');
+    } else {
+        return preg_replace('/^[0:]+/','',$h.':'.$m.':'.$s);
+    }
+}

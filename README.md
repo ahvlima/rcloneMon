@@ -343,7 +343,7 @@ Notes:
 
 Once the web server (stand alone or rclone) is running, open the URL pointing to the **dashboard** (dashboard.html) on your favorite web browser.
 
-Alternatively, you may monitor a running job directly by connecting to the **monitor* url and passing the **job** name.
+Alternatively, you may monitor a running job directly by connecting to the **monitor** url and passing the **job** name.
 
 ```
 http://server1.example.com:5572/rcloneMon.html?job=jobname

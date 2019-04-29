@@ -3,7 +3,7 @@ Web based remote monitor for rclone jobs - Version 0.9b
 
 # Introduction
 
-**rcloneMon** is a set tools focused on monitoring [`rclone`](https://rclone.org/) **jobs**. Its main objetive it to manage (babysit) rclone jobs that have a reasonably long run time or run constantly in the background.
+**rcloneMon** is a set tools focused on monitoring [`rclone`](https://rclone.org/) **jobs**. Its main objetive it to manage (babysit) rclone jobs that have a reasonably long run time or run constantly in the background. It can, however, monitor any `rclone` job, provided that it runs long enogh to allow monitoring. 
 
 **rcloneMon** is made of 3 major components:
 
@@ -13,11 +13,11 @@ Web based remote monitor for rclone jobs - Version 0.9b
 
 All components share a common configuration file (`config.json`). This allow a seamless flow of information for a tight integration.
 
-Although the main target for **rcloneMon** are jobs running on headless boxes (such as NAS), it can be used to monitor any `rclone` job running on the local desktop or remote hosts.
+Although the main target for **rcloneMon** are jobs running on headless boxes (such as NAS boxes), it can be used to monitor any `rclone` job running on the local desktop or remote hosts.
 
 ![rcloneMon sample screenshot](https://raw.githubusercontent.com/ahvlima/rcloneMon/master/rclone_screen.jpg)
 
-#Features
+# Features
 
 - Web based interface
 - Graphical progress information at the **job** and file levels
@@ -26,9 +26,9 @@ Although the main target for **rcloneMon** are jobs running on headless boxes (s
 - Persistent **job** statistics and results
 - Dashboard with extensive **job** statistics, even for finished or failed jobs
 - **job** status notification (using external exit)
-- Support for multiple **jobs** running on multiple **hosts**
+- Support for multiple simultaneous **jobs** running on multiple **hosts**
  
-#Concepts
+# Concepts
 
 ## `rclone` job modes
 
@@ -38,9 +38,9 @@ Currently `rclone` support two types of jobs:
 - A single synchronous `rclone` job, that are the ones started directly by the `rclone` command.
 - Multiple asynchorous `rclone` jobs, that are started with `rclone` Remote Control (`rclone rc` command) to run on a `rclone` remote controlled daemon, started with `rclone rcd`.
 
-### **rcloneMon** Limitations
+### Current limitations
 
-The ideal and more efficient scenario for monitorable jobs is to use asynchronous `rclone` jobs. However, the current remote control API does not provide fine grain progress information on a per job basis.
+The ideal and more efficient scenario for monitorable jobs is to use asynchronous `rclone` jobs. However, the current Remote Control API does not provide fine grain progress information on a per job basis.
 
 As a result **rcloneMon** currently uses synchronous `rclone` jobs. When the remote control API is enhanced to provides per job statistics **rcloneMon** will provide support for asynchronous jobs.
 
@@ -54,7 +54,7 @@ As expected, the **host** is the actual computer where an instance of `rclone` i
 
 ### Worker
 
-A **worker** is one instance of `rclone` running on a **host** with Remote Control active. It's defined by the **host** IP address or name, the TCP port that the Remote Control is answering requests and protocol (HTTP or HTTPS). 
+A **worker** is one instance of `rclone` running on a **host** with Remote Control active. It's defined by the **host** IP address or name, the TCP port that the Remote Control is answering requests on and protocol (HTTP or HTTPS). 
 
 There can be multiple **workers** in a host, provided that they are assigned (bind) to different TCP ports (using `rclone` option `--rc-addr`).
 
@@ -63,7 +63,7 @@ There can be multiple **workers** in a host, provided that they are assigned (bi
 
 A **job** is a `rclone` operation that will be executed by a particular **worker**. There can be several **jobs** associated with a single **worker**.
 
-At this time, **rcloneMon** only supports **workers** for synchronous **job**. This (temporary) limitation will restrict a single active **job** per **worker**. **rclone** does not perform any check for multiples **jobs** for a **worker**, but `rclone` will fail to start because the TCP port is already in use by the other instace of the **worker** (synchronous). 
+At this time, **rcloneMon** only supports **workers** for synchronous **job**. This (temporary) limitation will restrict a single active **job** per **worker**. **rcloneMon** does not perform any check for multiples **jobs** for a **worker**, but `rclone` will fail to start because the TCP port is already in use by the other instace of the **worker** (synchronous). 
 
 
 # Future development
@@ -79,12 +79,11 @@ Current goals are:
 
 # Dependencies
 
-First and foremost, the **wrapper scripts** were written and tested under Linux, but should run without problems on other *nix flavors (such as macOS). Running under Windows will require several adaptations, not possible at this time.
+First and foremost, the **wrapper scripts** were written and tested under Linux, but should run without problems on other \*nix flavors (such as macOS). Running under Windows will require several adaptations, not possible at this time.
 
 ## Web Server
 
-All **rcloneMon** files served over HTTP are static. **rcloneMon** don't require a dedicated webserver. `rclone` can only act as a web server for regular (static) files when running with the `--rc-files` option (using `--rc` option or running in Remote Control Daemon mode `rcd`).
-
+All **rcloneMon** files served over HTTP are static. **rcloneMon** don't require a dedicated webserver. `rclone` can act as a web server for regular (static) files when running with the `--rc-files` option, combined with the `--rc` option or running in Remote Control Daemon mode `rcd`).
 
 However, it can make use of an existing web server (such as Apache) for serving all the static files, while `rclone` will still be used to provide real-time statistics over HTTP.
 
@@ -119,9 +118,9 @@ All project files, including C3.js (please use c3.min.js and c3.min.css) and D3.
 
 ## PHP scripts
 
-Like any other \*unix scripts, PHP scripts requires the first line to contain the path to the PHP executable/interpreter, **PLEASE UPDATE** the *shebang* (first line, that starts with `#!`) to reflect the location of the PHP binary on your system, and if necessary the location of the php.ini file (if using non standard PHP settings). Note that PHP shebangs cannot have a single option and without blanks, so use `-c/pathto/php.ini` and not `-c /pathto/php.ini` or it will not work). 
+Like any other \*unix scripts, PHP scripts requires the first line to contain the path to the PHP executable/interpreter, **PLEASE UPDATE** the *shebang* (first line, that starts with `#!`) to reflect the location of the PHP binary on your system, and if necessary the location of the php.ini file (if using non standard PHP settings). Note that PHP *shebangs* cannot have more than a single option and it moust not have blanks. Therefore, use `-c/pathto/php.ini` and not `-c /pathto/php.ini` or it will not work. 
 
-Most of the time the default PHP instalation and configuration will sufice, being the only change, to be added, a default "timezone" (that can be also specified directly on the **rcloneMon** `config.json` file).
+Most of the time the default PHP instalation and configuration will sufice, being the only change that may be necessary is to define a default "timezone" (that can be also specified directly on the **rcloneMon** `config.json` file).
 
 The **wrapper script** is actually a collection of at least 3 scripts:
 
@@ -130,7 +129,7 @@ The **wrapper script** is actually a collection of at least 3 scripts:
 ```
 myrclone jobname [basedir]
 ```
-* `proclog` - that is used to attach and process the log file while it's being written by `rclone`, and will produce the persistent *status file*.
+* `proclog` - that is used to attach to and process the log file while it's being written by `rclone`, to produce the real-time and persistent *status file*.
 *  `notify` - a sample notification exit, also written in PHP, that will be called by `myrclone` at the start and end of a job, receiving as parameter the full path of the *status file*. By examining the *status file* the script can send a message (using any available method) or email to the appropriate user. Writting and configuring this exit is beyond the scope of **rcloneMon**.
 
 ### cron
@@ -153,7 +152,7 @@ Proper settings for path and URLs are required to allow all the components to fi
 1. The log file: this is the log file that is generated by the `rclone` **worker** that must run with the `-v` option in order to write overall **job** progress statistics.
 2. The status file: this file is generated and updated by **wrapper script** to provide missing progress information as well as persistent job information. Status files are served as static files by the selected web server.
 
-Both files need to be accessed by the scripts and served over the web, so it's necessary to have the proper path and URL setting for each one.  
+Both files need to be accessed by the scripts and served over the web, so it's necessary to have the proper path and URL settings for each one.  
 
 ### basedir
 
@@ -172,7 +171,7 @@ Like paths, any relative URL will be anchored at `baseUR` with the following def
 2. the `baseurl` specification for the **worker**
 3. the `baseurl` specification for the **job**
 
-## config.jon file
+## config.json file
 
 The `config.json` file must be placed on the same directory as all other files. It defines all **jobs** and associated **workers**, as well as some OS **enviroment** related settings (used only by the **wrapper script**).
 
@@ -211,8 +210,8 @@ The `jobs` *value* is an *array* of *objects*, each one defining a **job**. For 
 
 The `enviroment ` *value* is an *object*, with each *key* defining a setting of the operating enviroment. The following *keys* are available:
 
-* `timezone` - PHP does not use the system defined time zone. You may alternatively define it in the php.ini that will be used by the scripts (see PHP notes above).
-* `systemp` - path to the system temporary directory that is wiped out on every boot. Defaults to `/var/run`.
+* `timezone` - [optional] PHP does not use the system defined time zone. You may alternatively define it in the php.ini that will be used by the scripts (see PHP notes above). Defaults to UTC.
+* `systemp` - [optional] path to the system temporary directory that is wiped out on every boot. Defaults to `/var/run`.
 
 
 Here is a sample `config.json`. **It will not work without modifications**.
@@ -296,16 +295,51 @@ Here is a sample `config.json`. **It will not work without modifications**.
 }
 ```
 
-
-
-
 ## Authentication
 
 When connecting to `rclone` for statistics or when using it as the main web server, basic authentication `--rc-user` + `--rc-pass` or `--rc-htpasswd` can be used without problems and the web browser will ask for the authentication only once per session.
 
-If using another web server and authentication is required, please follow the appropriate instructions for configuring basic authentication. 
+If using another web server and authentication is required, please follow the appropriate instructions for configuring basic authentication.
 
-## Using **rcloneMonm** (Finally!)
+## Notification
+
+**rcloneMon** allows the definition of a *notification exit* that will be called when the **job** is started and again when it ends. 
+
+The exit program, along with any optional parameters, is specified in the `config.json` file. The actual command to be executed will have the full path to the **status file** appended.
+
+The exit program (that can be a binary or a script) must read the *status file* to determine the current state of the **job**. 
+
+Send the actual notification and the actual proceedure to do it is not part of **rcloneMon** or this document. 
+
+Note file `notify.template` contain a sample *notification exit* written in PHP to serve as a starting point.
+
+## Status file
+
+The *status file* contain a single JSON object with the following keys:
+
+* `status` - Current **job** status ('running', 'ended' or 'failed')
+* `job` -  **job** name
+* `worker` -  **worker** name
+* `start` - start timestamp (in seconds since the UNIX EPOCH)
+* `starttime` - formated start time
+* `end` -  end timestamp (in seconds since the UNIX EPOCH)
+* `endtime` - formated end time 
+* `elapsed` - seconds elapsed since the start (formated)
+* `ETA` - ETA (as estimated by `rclone`)
+* `bandwidth` - current bandwitdh limit (see below)
+* `transferredbytes` - bytes transferred
+* `transferredfiles` - files transferred
+* `totalbytes` - total bytes estimated to be transferred by the **job**
+* `totalfiles` - total files estimated to be transferred by the **job**
+* `errors` - number of errors 
+* `lastrc` - last exit code from `rclone`
+
+Notes:
+1. Not all *keys* will be present at all times.
+2. Bandwith limitation cannot be queried, so initially it's set to the first value specified in the `config.json` bandwidth settings, and will correctly change to when set in the GUI or externally directly with Remote Control.
+3. totalbytes and totalfiles may change as `rclone` revises these numbers (running checks). 
+
+# Using **rcloneMon** (Finally!)
 
 Once the web server (stand alone or rclone) is running, open the URL pointing to the **dashboard** (dashboard.html) on your favorite web browser.
 
